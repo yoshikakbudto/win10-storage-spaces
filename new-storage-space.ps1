@@ -3,29 +3,32 @@
 #Tested with one SSD and two HDD
 #
 #Pool that will suck in all drives
-$StoragePoolName = "My Storage Pool"
+$StoragePoolName = "assets"
 #Tiers in the storage pool
 $SSDTierName = "SSDTier"
+#[int64]($SSDTierSize * $UsableSpace - $WriteBackCacheSizeGB)
 $HDDTierName = "HDDTier"
 #Virtual Disk Name made up of disks in both tiers
-$TieredDiskName = "My Tiered VirtualDisk"
+$TieredDiskName = "assets"
 
 #Simple = striped.  Mirror only works if both can mirror AFIK
 #https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/dn387076(v=ws.11)
 $DriveTierResiliency = "Simple"
 
 #Change to suit - drive later and the label name
-$TieredDriveLetter = "Z"
+$TieredDriveLetter = "E"
 $TieredDriveLabel = "StorageDrive"
 
 #Override the default sizing here - useful if have two different size SSDs or HDDs - set to smallest of pair
 #These must be Equal or smaller than the disk size available in that tier SSD and HDD
 #SSD:cache  -    HDD:data
 #set to null so copy/paste to command prompt doesn't have previous run values
-$SSDTierSize = $null
+$SSDTierSize = 8000000000
 $HDDTierSize = $null
 #Drives cannot always be fully allocated - probably broken for drives < 10GB
 $UsableSpace = 0.99
+# Tune for your environment. Should match physical blocksize
+$LogicalSectorSize = 4096
 
 #Uncomment and put your HDD type here if it shows up as unspecified with "Get-PhysicalDisk -CanPool $True
 #    If your HDDs show up as Unspecified instead of HDD
@@ -51,7 +54,7 @@ if ($PhysicalDisks -eq $null){
 
 #Create a new Storage Pool using the disks in variable $PhysicalDisks with a name of My Storage Pool
 $SubSysName = (Get-StorageSubSystem).FriendlyName
-New-StoragePool -PhysicalDisks $PhysicalDisks -StorageSubSystemFriendlyName $SubSysName -FriendlyName $StoragePoolName
+New-StoragePool -PhysicalDisks $PhysicalDisks -StorageSubSystemFriendlyName $SubSysName -FriendlyName $StoragePoolName -LogicalSectorSize $LogicalSectorSize
 #View the disks in the Storage Pool just created
 Get-StoragePool -FriendlyName $StoragePoolName | Get-PhysicalDisk | Select FriendlyName, MediaType
 
@@ -85,5 +88,7 @@ Get-VirtualDisk $TieredDiskName | Get-Disk | Initialize-Disk -PartitionStyle GPT
 Get-VirtualDisk $TieredDiskName | Get-Disk | New-Partition -DriveLetter $TieredDriveLetter -UseMaximumSize
 Initialize-Volume -DriveLetter $TieredDriveLetter -FileSystem NTFS -Confirm:$false -NewFileSystemLabel $TieredDriveLabel
 Get-Volume -DriveLetter $TieredDriveLetter
+
+Get-VirtualDisk | Select-Object FriendlyName, PhysicalSectorSize, LogicalSectorSize
 
 Write-Output "Operation complete"
