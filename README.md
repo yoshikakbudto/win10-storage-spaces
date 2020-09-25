@@ -1,4 +1,4 @@
-# A for of https://github.com/freemansoft/win10-storage-spaces
+# A fork of https://github.com/freemansoft/win10-storage-spaces
 
 # Create Storage Spaces in Windows 10
 Windows Server O/S contains Storage Spaces support for Server Spaces tiered storage. 
